@@ -1,6 +1,12 @@
 # ReefGuideWorkerTemplate.jl
 
-A Julia-based worker template for the ReefGuide distributed job processing system. This template provides a foundation for implementing custom job handlers that can process tasks from the ReefGuide job queue.
+A Julia-based worker template for the [open-AIMS/reefguide](https://github.com/open-AIMS/reefguide) distributed job processing system. This template provides a foundation for implementing custom job handlers that can process tasks from the ReefGuide job queue.
+
+## Context
+
+This worker template integrates with the ReefGuide ecosystem, connecting to the ReefGuide web API to receive and process distributed computing tasks. The `API_ENDPOINT` environment variable should point to your ReefGuide web API instance.
+
+**For local development**: First spin up the local ReefGuide stack by following the setup instructions in the [ReefGuide README](https://github.com/open-AIMS/reefguide). This will provide the necessary API endpoint and supporting services (database, S3 storage, etc.) that the worker connects to.
 
 ## Quick Start
 
@@ -15,14 +21,35 @@ A Julia-based worker template for the ReefGuide distributed job processing syste
 
 ### Setup and Development
 
-1. Navigate to the `sandbox/` directory
-2. Initialize the project:
+#### Local Development
+
+1. Copy the environment template:
+   ```bash
+   cp .env.local .env
+   ```
+2. Navigate to the `sandbox/` directory
+3. Initialize the project:
    ```bash
    ./init.sh
    ```
-3. Start the development environment:
+4. Start the development environment:
    ```bash
    ./start.sh
+   ```
+
+#### Docker Development
+
+1. Copy the environment template:
+   ```bash
+   cp .env.local .env
+   ```
+2. Build the Docker image:
+   ```bash
+   docker build . -t worker
+   ```
+3. Run the container:
+   ```bash
+   docker run --env-file .env worker
    ```
 
 ## How It Works
