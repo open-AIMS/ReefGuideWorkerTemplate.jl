@@ -8,6 +8,71 @@ handle jobs for this worker.
 # ================
 
 """
+Represents a job that needs to be processed
+"""
+struct Job
+    "Job ID in the DB"
+    id::Int64
+    "What type of Job - strict set of enums"
+    type::String
+    "The payload defining the job parameters - should correspond to input payload type registered in Jobs.jl"
+    input_payload::Any
+end
+
+"""
+Represents an assignment for a job
+"""
+struct JobAssignment
+    "ID of the assignment in the DB"
+    id::Int64
+    "ID of the tasked job"
+    job_id::Int64
+    "Path to where the data can be stored (in s3)"
+    storage_uri::String
+end
+
+"""
+Context provided to job handlers with all necessary information
+"""
+struct JobContext
+    "Worker configuration"
+    config::WorkerConfig
+    "The job to be processed"
+    job::Job
+    "The job assignment details"
+    assignment::JobAssignment
+    "The API client for making HTTP requests"
+    http_client::AuthApiClient
+    "Storage client e.g. s3"
+    storage_client::StorageClient
+    "Task metadata"
+    task_metadata::Any
+    "AWS region for s3 storage"
+    aws_region::String
+    "S3 endpoint"
+    s3_endpoint::OptionalValue{String}
+
+    "Constructor that takes all fields"
+    function JobContext(;
+        config::WorkerConfig,
+        job::Job,
+        assignment::JobAssignment,
+        http_client::AuthApiClient,
+        storage_client::StorageClient,
+        task_metadata::Any
+    )
+        return new(
+            config,
+            job,
+            assignment,
+            http_client,
+            storage_client,
+            task_metadata
+        )
+    end
+end
+
+"""
 Enum for job types matching the API definition
 """
 @enum JobType begin
@@ -161,7 +226,7 @@ end
 Process a job using the appropriate handler
 """
 function process_job(
-    job_type::JobType, input_payload::Any, context::HandlerContext
+    job_type::JobType, input_payload::Any, context::JobContext
 )::AbstractJobOutput
     # Get the registered handler
     handler = get_job_handler(job_type)
@@ -207,7 +272,7 @@ struct TestHandler <: AbstractJobHandler end
 Process a TEST job
 """
 function handle_job(
-    ::TestHandler, input::TestInput, context::HandlerContext
+    ::TestHandler, input::TestInput, context::JobContext
 )::TestOutput
     @debug "Processing test job with id: $(input.id)"
 
@@ -215,7 +280,7 @@ function handle_job(
     sleep(10)
 
     @debug "Finished test job with id: $(input.id)"
-    @debug "Could write something to $(context.storage_uri) if desired."
+    @debug "Could write something to $(context.assignment.storage_uri) if desired."
 
     # This is where the actual job processing would happen
     # For now, we just return a dummy output
